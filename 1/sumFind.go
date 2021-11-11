@@ -19,9 +19,7 @@ type stats struct {
 	numbers  *linkedList.List
 	current  int
 	compared *linkedList.Element
-	found    bool
-	foundNum int
-	wg       sync.WaitGroup
+	found    int
 }
 
 func main() {
@@ -31,8 +29,8 @@ func main() {
 		return
 	}
 
-	stats := stats{numbers: numbers, found: false}
-	for number := numbers.Front(); number != nil && stats.found == false; number = number.Next() {
+	stats := stats{numbers: numbers, found: 0}
+	for number := numbers.Front(); number != nil && stats.found == 0; number = number.Next() {
 		stats.current = number.Value.(int)
 		stats.compared = number.Next()
 
@@ -41,32 +39,32 @@ func main() {
 		}
 	}
 
-	fmt.Println(fmt.Sprintf("Answer: Looking for: %d & %d. Multiplies to: %d", stats.current, stats.foundNum, stats.current*stats.foundNum))
+	fmt.Println(fmt.Sprintf("Answer: Looking for: %d & %d. Multiplies to: %d", stats.current, stats.found, stats.current*stats.found))
 }
 
 func (s *stats) runWorkers() {
+	var wg sync.WaitGroup
 	for i := 0; i < noOfWorkers; i++ {
 
 		// When notifying WG about new goroutine be sure to only increment by 1
-		s.wg.Add(1)
+		wg.Add(1)
 
 		i := i
 		go func() {
-			defer s.wg.Done()
+			defer wg.Done()
 			checking := s.compared
 			if checking != nil {
 				s.compared = s.compared.Next()
 				found, number := check(i, s.current, checking.Value.(int))
 
 				if found {
-					s.found = true
-					s.foundNum = number
+					s.found = number
 				}
 			}
 		}()
 	}
 
-	s.wg.Wait()
+	wg.Wait()
 }
 
 func check(workerId, num1, num2 int) (bool, int) {
