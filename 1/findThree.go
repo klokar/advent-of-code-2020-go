@@ -19,7 +19,7 @@ type stats struct {
 	numbers  *linkedList.List
 	current  int
 	compared *linkedList.Element
-	found    int
+	found    []int
 }
 
 func main() {
@@ -29,17 +29,22 @@ func main() {
 		return
 	}
 
-	stats := stats{numbers: numbers, found: 0}
-	for number := numbers.Front(); number != nil && stats.found == 0; number = number.Next() {
+	stats := stats{numbers: numbers}
+	for number := numbers.Front(); number != nil && len(stats.found) == 0; number = number.Next() {
 		stats.current = number.Value.(int)
-		stats.compared = number.Next()
+		stats.compared = numbers.Front()
 
 		for stats.compared != nil {
 			stats.runWorkers()
 		}
 	}
 
-	fmt.Println(fmt.Sprintf("Answer: Looking for: %d & %d. Multiplies to: %d", stats.current, stats.found, stats.current*stats.found))
+	if len(stats.found) != 0 {
+		fmt.Println(fmt.Sprintf(
+			"Answer: Looking for: %d & %d & %d. Multiplies to: %d",
+			stats.found[0], stats.found[1], stats.found[2], stats.found[0]*stats.found[1]*stats.found[2],
+		))
+	}
 }
 
 func (s *stats) runWorkers() {
@@ -55,10 +60,13 @@ func (s *stats) runWorkers() {
 			checking := s.compared
 			if checking != nil {
 				s.compared = s.compared.Next()
-				found, number := check(i, s.current, checking.Value.(int))
 
-				if found {
-					s.found = number
+				for number3 := s.numbers.Front(); number3 != nil && len(s.found) == 0; number3 = number3.Next() {
+					found, number1, number2, number3 := check(i, s.current, checking.Value.(int), number3.Value.(int))
+
+					if found {
+						s.found = []int{number1, number2, number3}
+					}
 				}
 			}
 		}()
@@ -67,9 +75,9 @@ func (s *stats) runWorkers() {
 	wg.Wait()
 }
 
-func check(workerId, num1, num2 int) (bool, int) {
-	fmt.Println(fmt.Sprintf("Worker:%d, Comparing: %d & %d", workerId, num1, num2))
-	return num1+num2 == required, num2
+func check(workerId, num1, num2, num3 int) (bool, int, int, int) {
+	//fmt.Println(fmt.Sprintf("Worker:%d, Comparing: %d & %d & %d", workerId, num1, num2, num3))
+	return num1+num2+num3 == required, num1, num2, num3
 }
 
 func readFile(path string) (*linkedList.List, error) {
